@@ -25,6 +25,9 @@ HOTKEYS = ["f8", "ctrl+alt+8"]  # 입력 실행 키 (여러 개 가능, 노트�
 STRIP_EXT = False  # True면 .jpg 같은 확장자 제거
 SORT = True        # True면 이름순(숫자 자연 정렬)으로 입력
 DELAY = 0.15       # 칸마다 대기 시간(초). 입력이 씹히면 0.3 정도로 올리세요
+RATIO_OFFSET = 1   # 파일명에서 찾은 비율(1대1 등)을 오른쪽 몇 번째 칸에 입력할지. 0이면 입력 안 함
+# 파일명에 이 단어가 있으면 "이미지_1대1"처럼 앞에 붙여서 입력 (드롭다운 항목 이름에 맞춤)
+RATIO_PREFIXES = ["이미지", "카드뉴스"]
 # ================
 
 _last_set = None
@@ -85,6 +88,27 @@ def set_text(text):
         wc.CloseClipboard()
 
 
+def find_ratio(name):
+    """파일명에서 비율(1대1, 9대16, 1.91대1 등)을 찾아 드롭다운 항목 형태로 돌려준다."""
+    m = re.search(r"(\d+(?:\.\d+)?)대(\d+(?:\.\d+)?)", name)
+    if not m:
+        return None
+    ratio = m.group(0)
+    for prefix in RATIO_PREFIXES:
+        if prefix in name:
+            return f"{prefix}_{ratio}"
+    return ratio
+
+
+def paste_here(text):
+    if not set_text(text):
+        return False
+    time.sleep(0.05)
+    keyboard.send("ctrl+v")
+    time.sleep(DELAY)
+    return True
+
+
 def natural_key(s):
     return [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", s)]
 
@@ -103,14 +127,28 @@ def run():
             names.sort(key=natural_key)
 
         print(f"{len(names)}개 입력 중...")
+        missing = []
         for n in names:
-            if not set_text(n):
+            if not paste_here(n):
                 continue
-            time.sleep(0.05)
-            keyboard.send("ctrl+v")
-            time.sleep(DELAY)
+            if RATIO_OFFSET > 0:
+                ratio = find_ratio(n)
+                if ratio:
+                    for _ in range(RATIO_OFFSET):
+                        keyboard.send("right")
+                        time.sleep(0.05)
+                    paste_here(ratio)
+                    for _ in range(RATIO_OFFSET):
+                        keyboard.send("left")
+                        time.sleep(0.05)
+                else:
+                    missing.append(n)
             keyboard.send("down")
             time.sleep(0.05)
+        if missing:
+            print(f"[알림] 비율을 못 찾은 파일 {len(missing)}개 (비율 칸은 비워둠):")
+            for n in missing:
+                print("  -", n)
         beep(900, 150)
         print(f"완료: {len(names)}개")
     except Exception:
