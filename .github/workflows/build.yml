@@ -1,4 +1,4 @@
-name: Build exe
+name: Build executables
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,11 +26,59 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: filename_paste-windows
+          name: windows
           path: dist/filename_paste.exe
 
+  build-mac:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest      # Apple Silicon (M1/M2/M3/M4)
+            label: apple-silicon
+          - os: macos-15-intel    # Intel Mac
+            label: intel
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements-mac.txt pyinstaller
+
+      - name: Build
+        run: >
+          pyinstaller --onefile --name filename_paste_mac
+          --collect-submodules pynput
+          --hidden-import AppKit
+          --hidden-import Quartz
+          filename_paste_mac.py
+
+      - name: Zip (keeps the executable permission)
+        run: |
+          cd dist
+          chmod +x filename_paste_mac
+          zip filename_paste_mac_${{ matrix.label }}.zip filename_paste_mac
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-${{ matrix.label }}
+          path: dist/filename_paste_mac_${{ matrix.label }}.zip
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-windows, build-mac]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/filename_paste.exe
+          files: artifacts/*
