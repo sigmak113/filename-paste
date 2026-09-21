@@ -27,7 +27,16 @@ python filename_paste.py
 
 ## macOS
 
-윈도우와 별도 파일(`filename_paste_mac.py`)을 씁니다. 소스로 실행합니다.
+윈도우와 별도 파일(`filename_paste_mac.py`)을 씁니다.
+
+### 실행파일로 쓰기
+[Releases](../../releases)에서 내 맥에 맞는 zip을 받습니다.
+- 애플 실리콘(M1~M4): `filename_paste_mac_apple-silicon.zip`
+- 인텔 맥: `filename_paste_mac_intel.zip`
+
+zip을 풀고 `filename_paste_mac`을 **우클릭 → 열기**로 실행합니다. (서명되지 않은 앱이라 더블클릭하면 막힐 수 있습니다.) 터미널이 열리며 프로그램이 시작됩니다. 아래 권한 설정을 꼭 해주세요.
+
+### 소스로 실행하기
 
 ```bash
 python3 -m pip install --user -r requirements-mac.txt
@@ -68,7 +77,7 @@ Actions 탭에서 `Build exe`를 수동 실행(workflow_dispatch)할 수도 있�
 
 ## 참고
 
-- exe 자동 빌드는 Windows용만 제공합니다. 맥은 소스로 실행하세요.
+- 맥 실행파일은 서명·공증이 안 돼 있어 처음 실행 시 보안 경고가 뜹니다. 우클릭 → 열기로 실행하세요.
 - 전역 키보드 훅(`keyboard` 라이브러리)을 쓰기 때문에 일부 백신이 exe를 오탐할 수 있습니다. 걱정되면 소스로 실행하세요.
 - 입력이 끝나면 클립보드에 마지막 파일명이 남습니다.
 
